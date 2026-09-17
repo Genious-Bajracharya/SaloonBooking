@@ -111,7 +111,6 @@ export default function Booking() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Use Navbar Component */}
       <Navbar />
 
       {/* Rest of the page remains the same */}
