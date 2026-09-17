@@ -53,14 +53,10 @@ def appointments_list(request):
         serializer = AppointmentSerializer(data=request.data)
         if serializer.is_valid():
             service_id = request.data.get('service')
-            try:
-                service = Service.objects.get(id=service_id)
-            except Service.DoesNotExist:
-                return Response({'error': 'Service not found'}, status=status.HTTP_400_BAD_REQUEST)
-
             date = request.data.get('appointment_date')
             time = request.data.get('appointment_time')
             
+            # Check for double booking BEFORE saving
             existing = Appointment.objects.filter(
                 service_id=service_id,
                 appointment_date=date,
@@ -73,8 +69,18 @@ def appointments_list(request):
                     status=status.HTTP_409_CONFLICT
                 )
             
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                # Catch unique_together errors
+                if 'unique_together' in str(e):
+                    return Response(
+                        {'error': 'This time slot is already booked for this service'},
+                        status=status.HTTP_409_CONFLICT
+                    )
+                raise
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
